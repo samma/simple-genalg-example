@@ -8,15 +8,23 @@ import "time"
 
 const CROSSOVERRATE = 0.7
 const MUTATIONRATE = 0.001
-const POPULATION = 10
+const POPULATION = 15
 const MAXGENERATIONS = 1000
 const NUMOPERATORS = 3
 const NUMBITS = 4*(NUMOPERATORS*2+1) //28 in the case of 3 operators
 const SYMBOLLENGTH = 4 //in bits
 
-func Log(v ...interface{}){
-	enableDebug := true
+func Deb(v ...interface{}){
+	enableDebug := false
 	if enableDebug{ 
+		fmt.Println(v...)
+	}
+}
+
+
+func Log(v ...interface{}){
+	enableLog := true
+	if enableLog{ 
 		fmt.Println(v...)
 	}
 }
@@ -126,7 +134,7 @@ func generateNChroms(n int)([]string){
 
 
 //Parse the string 4 by 4 bit and calculate the expression 
-func calcFitness(chromStr string)(ret float32){
+func evalExpression(chromStr string)(ret float32){
 	var currentval float32 =  0.0
 	currentOperator := add
 	next := number
@@ -139,8 +147,14 @@ func calcFitness(chromStr string)(ret float32){
 			if argumentType(thisString) == number{
 				//calculate new currentval based on  "prev operatoe" and "currentval
 				tempNumeric = parseNumeric(thisString) 
+				//handle divide by zero
+				if tempNumeric == 0 && currentOperator == div{
+					Log("div by zero")
+					return -1 
+					
+				}
 				currentval = doMath(currentOperator,tempNumeric,currentval)
-				Log(tempNumeric)
+				Deb(tempNumeric)
 				next = operator
 			}
 			
@@ -149,25 +163,69 @@ func calcFitness(chromStr string)(ret float32){
 			if argumentType(thisString) == operator{
 				tempOperator = parseOperator(thisString)
 				currentOperator = tempOperator
-				Log(humanReadOperator(tempOperator))
+				Deb(humanReadOperator(tempOperator))
 				next = number
 			}
 
 		}
 		chromStr = chromStr[4:]
 	}
-	Log("=")
+	Deb("=")
 	return currentval
 }
 
+//The function to optimize
+func calcFitness(inputVal, goal float32)(fitness float32,correct bool){
+	correct = false
+	if inputVal == goal{
+		correct = true
+	}
+	fitness = 1/abs((goal-inputVal))
+	return
+}
+
+func abs(in float32)(ret float32){
+	if in < 0{
+		return -in
+	}
+	return in	
+}
 
 
 //An attempt to run a genetic algorithm...
 func main(){
-	fmt.Print("Hello genetic algorithms!\n")
-	lol := generateNChroms(1)
-	fmt.Println(lol)
-	fmt.Println(calcFitness(lol[0]))
+	var target float32 = 42
+	fmt.Println("Hello genetic algorithms!")
+	lol := generateNChroms(POPULATION)
+	//fmt.Println(lol)
+	best := float32(0.0)
+	bestFit := float32(0.0)
+	curr := float32(0.0)
+	currFit := float32(0.0)
+	goalReached := false
+	for i:=0;i<POPULATION;i++{
+		curr = evalExpression(lol[i])
+		currFit,goalReached = calcFitness(curr,target)
+		if !goalReached {
+			if currFit > bestFit{
+				best = curr
+				bestFit = currFit
+			}
+		}else{
+			bestFit = currFit
+			best = curr
+			Log("Evolution perfected!",target)
+			
+			break;
+		}
+	}
+
+	if !goalReached{
+		Log("Population failed")
+		Log("Best loser is:")
+		Log(best)
+		Log(bestFit)
+	}
 	//population := generateNChroms(POPULATION)
 	//fmt.Print(population)
 
