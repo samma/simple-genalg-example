@@ -215,7 +215,7 @@ func crossOver(chromOne string, chromTwo string)(string, string){
 }
 
 //TODO verify this func
-	func mutateBit(chrom []string)(string){
+func mutateBit(chrom []string)(string){
 	//var ret string 
 	oneS := make([]string,1)
 	zeroS := make([]string,1)
