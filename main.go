@@ -68,7 +68,7 @@ func doMath(operator int, tempinput int, storage float32)(res float32){
 	case div:return storage/input
 	default: return 99999.9 //Break
 	}
-	return 0.1
+	return 0.1 //TODO handle error????
 } 
 
 func parseNumeric(arg string)(ret int){
@@ -115,9 +115,9 @@ func generateOneChrom()(string){
 	for i:=0;i<NUMBITS;i++{
 		tilf := rand.Float32()
 		if tilf < 0.5{
-			temp=temp+"0"
+			temp+="0"
 		}else{
-			temp=temp+"1"
+			temp+="1"
 		}
 	}
 	return temp
@@ -188,7 +188,51 @@ func abs(in float32)(ret float32){
 	if in < 0{
 		return -in
 	}
-	return in	
+	return in
+}
+
+
+//TODO finalize
+func mateOneGeneration(popIn []string,goal float32)(popOut []string){
+	popOut = make([]string,len(popIn))
+	fitness := make([]float32,len(popIn))
+	for i,chromIn := range popIn{
+		fitness[i],_ = calcFitness(evalExpression(chromIn),goal)
+	}
+	
+	return
+}
+
+func crossOver(chromOne string, chromTwo string)(string, string){
+	crossOverCheck := rand.Float32()
+	if crossOverCheck > CROSSOVERRATE{
+		chosenGene := int((rand.Float32())*float32(len(chromOne)))
+		temp := chromOne
+		chromOne = chromOne[0:chosenGene] + chromTwo[chosenGene:]
+		chromTwo = chromTwo[0:chosenGene] + temp[chosenGene:]
+	}
+	return chromOne,chromTwo
+}
+
+//TODO verify this func
+	func mutateBit(chrom []string)(string){
+	//var ret string 
+	oneS := make([]string,1)
+	zeroS := make([]string,1)
+	oneS[0] = "1"
+	zeroS[0] = "0"
+	Log(zeros.Type())
+	for i,_ := range chrom{
+		mutateCheck := rand.Float32()
+		if mutateCheck > (1-MUTATIONRATE){
+			if chrom[i] == "0"{
+				ret := chrom[0:i]+oneS[0]+chrom[i+1:]
+			}else{
+				ret := chrom[0:1]+zeroS[0]+chrom[i+1:]
+			}
+		}
+	}
+	return
 }
 
 
@@ -203,6 +247,8 @@ func main(){
 	curr := float32(0.0)
 	currFit := float32(0.0)
 	goalReached := false
+	mateOneGeneration(lol,target)
+	lol[0],lol[1] = crossOver(lol[0],lol[1])
 	for i:=0;i<POPULATION;i++{
 		curr = evalExpression(lol[i])
 		currFit,goalReached = calcFitness(curr,target)
@@ -218,6 +264,7 @@ func main(){
 			
 			break;
 		}
+
 	}
 
 	if !goalReached{
