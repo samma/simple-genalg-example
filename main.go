@@ -2,6 +2,7 @@ package main
 import "fmt"
 import "math/rand"
 import "time"
+import "sort"
 //import "reflect"
 //import "strings"
 //import "bytes"
@@ -59,8 +60,8 @@ func argumentType(arg string)(ret int){
 	return broken
 }
 
-func doMath(operator int, tempinput int, storage float32)(res float32){
-	input := float32(tempinput)
+func doMath(operator int, tempinput int, storage float64)(res float64){
+	input := float64(tempinput)
 
 	switch operator{
 	case add:return storage+input
@@ -114,7 +115,7 @@ func humanReadOperator(arg int)(ret string){
 func generateOneChrom()(string){
 	var temp string
 	for i:=0;i<NUMBITS;i++{
-		tilf := rand.Float32()
+		tilf := rand.Float64()
 		if tilf < 0.5{
 			temp+="0"
 		}else{
@@ -135,8 +136,8 @@ func generateNChroms(n int)([]string){
 
 
 //Parse the string 4 by 4 bit and calculate the expression 
-func evalExpression(chromStr string)(ret float32){
-	var currentval float32 =  0.0
+func evalExpression(chromStr string)(ret float64){
+	var currentval float64 =  0.0
 	currentOperator := add
 	next := number
 	tempOperator := none
@@ -176,7 +177,7 @@ func evalExpression(chromStr string)(ret float32){
 }
 
 //The function to optimize
-func calcFitness(inputVal, goal float32)(fitness float32,correct bool){
+func calcFitness(inputVal, goal float64)(fitness float64,correct bool){
 	correct = false
 	if inputVal == goal{
 		correct = true
@@ -185,7 +186,7 @@ func calcFitness(inputVal, goal float32)(fitness float32,correct bool){
 	return
 }
 
-func abs(in float32)(ret float32){
+func abs(in float64)(ret float64){
 	if in < 0{
 		return -in
 	}
@@ -194,14 +195,22 @@ func abs(in float32)(ret float32){
 
 
 //TODO finalize
-func mateOneGeneration(popIn []string,goal float32)(popOut []string){
+func mateOneGeneration(popIn []string,goal float64)(popOut []string){
 	popOut = make([]string,len(popIn))
-	fitness := make([]float32,len(popIn))
+	fitness := make([]float64,len(popIn))
 	for i,chromIn := range popIn{
 		fitness[i],_ = calcFitness(evalExpression(chromIn),goal)
 	}
-	Log(prepareRoulette(fitness))
+//	Log(prepareRoulette(fitness))	
 	
+	for i:=0;i<len(popIn)/2;i++{
+		firstMateIndex := pickWinner(prepareRoulette(fitness))
+		secondMateIndex := pickWinner(prepareRoulette(fitness))
+		for secondMateIndex == firstMateIndex{
+			secondMateIndex = pickWinner(prepareRoulette(fitness))
+		}
+		popOut[i],popOut[i+1] = crossOver(popIn[firstMateIndex],popIn[secondMateIndex])
+	}
 	return
 }
 
@@ -210,9 +219,9 @@ func crossOver(chromOne string, chromTwo string)(string, string){
 	//chromTest := string(chromOne[0])
 	//Log(reflect.TypeOf(chromTest))
 	//Log(chromTest)
-	crossOverCheck := rand.Float32()
+	crossOverCheck := rand.Float64()
 	if crossOverCheck < CROSSOVERRATE{
-		chosenGene := int((rand.Float32())*float32(len(chromOne)))
+		chosenGene := int((rand.Float64())*float64(len(chromOne)))
 		temp := chromOne
 		chromOne = chromOne[0:chosenGene] + chromTwo[chosenGene:]
 		chromTwo = chromTwo[0:chosenGene] + temp[chosenGene:]
@@ -226,7 +235,7 @@ func crossOver(chromOne string, chromTwo string)(string, string){
 func mutateString(chrom string)(ret string){
 	ret = chrom
 	for i,_ := range chrom{
-		mutateCheck := rand.Float32()
+		mutateCheck := rand.Float64()
 		if mutateCheck < MUTATIONRATE{
 			charTest := string(chrom[i])
 			if charTest == "0"{
@@ -240,34 +249,37 @@ func mutateString(chrom string)(ret string){
 }
 
 //Picks a random chromosome based on fitness
-func prepareRoulette(fitnessTable []float32)([]float32){
-	ret := make([]float32,len(fitnessTable))
+func prepareRoulette(fitnessTable []float64)([]float64){
+	ret := make([]float64,len(fitnessTable))
 	ret[0] = fitnessTable[0]
 	for i,_ := range fitnessTable{
 		if i != 0{
 			ret[i] = fitnessTable[i]+ret[i-1]
 		}
 	}
-	largest := ret[len(ret)-1]
-	winner := rand.Float32()*largest
-	Log(winner)
+	//Log(winner)
+	//Log(winnerIndex)
 	return ret
 }
 
-//func rouletteSelection(wheel []float32)(ret int){
-//	ret 5
-//} 
+func pickWinner(rouletteWheel []float64)(ret int){
+	largest := rouletteWheel[len(rouletteWheel)-1]
+	winner := rand.Float64()*largest
+	winnerIndex := sort.SearchFloat64s(rouletteWheel,winner)
+	return winnerIndex
+}
+
 
 
 //An attempt to run a genetic algorithm...
 func main(){
-	var target float32 = 42
+	var target float64 = 42
 	fmt.Println("Hello genetic algorithms!")
 	lol := generateNChroms(POPULATION)
-	best := float32(0.0)
-	bestFit := float32(0.0)
-	curr := float32(0.0)
-	currFit := float32(0.0)
+	best := float64(0.0)
+	bestFit := float64(0.0)
+	curr := float64(0.0)
+	currFit := float64(0.0)
 	goalReached := false
 
 	//Log(mutateString(lol[0]))
