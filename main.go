@@ -2,14 +2,15 @@ package main
 import "fmt"
 import "math/rand"
 import "time"
-
+//import "reflect"
+//import "strings"
 //import "bytes"
-//import "string"
+
 
 const CROSSOVERRATE = 0.7
 const MUTATIONRATE = 0.001
 const POPULATION = 15
-const MAXGENERATIONS = 1000
+const MAXGENERATIONS = 10
 const NUMOPERATORS = 3
 const NUMBITS = 4*(NUMOPERATORS*2+1) //28 in the case of 3 operators
 const SYMBOLLENGTH = 4 //in bits
@@ -199,41 +200,63 @@ func mateOneGeneration(popIn []string,goal float32)(popOut []string){
 	for i,chromIn := range popIn{
 		fitness[i],_ = calcFitness(evalExpression(chromIn),goal)
 	}
+	Log(prepareRoulette(fitness))
 	
 	return
 }
 
 func crossOver(chromOne string, chromTwo string)(string, string){
+	//next line is test
+	//chromTest := string(chromOne[0])
+	//Log(reflect.TypeOf(chromTest))
+	//Log(chromTest)
 	crossOverCheck := rand.Float32()
-	if crossOverCheck > CROSSOVERRATE{
+	if crossOverCheck < CROSSOVERRATE{
 		chosenGene := int((rand.Float32())*float32(len(chromOne)))
 		temp := chromOne
 		chromOne = chromOne[0:chosenGene] + chromTwo[chosenGene:]
 		chromTwo = chromTwo[0:chosenGene] + temp[chosenGene:]
 	}
+	chromOne = mutateString(chromOne)
+	chromTwo = mutateString(chromTwo)
 	return chromOne,chromTwo
 }
 
 //TODO verify this func
-func mutateBit(chrom []string)(string){
-	//var ret string 
-	oneS := make([]string,1)
-	zeroS := make([]string,1)
-	oneS[0] = "1"
-	zeroS[0] = "0"
-	Log(zeros.Type())
+func mutateString(chrom string)(ret string){
+	ret = chrom
 	for i,_ := range chrom{
 		mutateCheck := rand.Float32()
-		if mutateCheck > (1-MUTATIONRATE){
-			if chrom[i] == "0"{
-				ret := chrom[0:i]+oneS[0]+chrom[i+1:]
+		if mutateCheck < MUTATIONRATE{
+			charTest := string(chrom[i])
+			if charTest == "0"{
+				ret = ret[0:i] + "1" + ret[i+1:]
 			}else{
-				ret := chrom[0:1]+zeroS[0]+chrom[i+1:]
+				ret = ret[0:i] + "0" + ret[i+1:]
 			}
 		}
 	}
-	return
+	return ret
 }
+
+//Picks a random chromosome based on fitness
+func prepareRoulette(fitnessTable []float32)([]float32){
+	ret := make([]float32,len(fitnessTable))
+	ret[0] = fitnessTable[0]
+	for i,_ := range fitnessTable{
+		if i != 0{
+			ret[i] = fitnessTable[i]+ret[i-1]
+		}
+	}
+	largest := ret[len(ret)-1]
+	winner := rand.Float32()*largest
+	Log(winner)
+	return ret
+}
+
+//func rouletteSelection(wheel []float32)(ret int){
+//	ret 5
+//} 
 
 
 //An attempt to run a genetic algorithm...
@@ -241,14 +264,17 @@ func main(){
 	var target float32 = 42
 	fmt.Println("Hello genetic algorithms!")
 	lol := generateNChroms(POPULATION)
-	//fmt.Println(lol)
 	best := float32(0.0)
 	bestFit := float32(0.0)
 	curr := float32(0.0)
 	currFit := float32(0.0)
 	goalReached := false
+
+	//Log(mutateString(lol[0]))
 	mateOneGeneration(lol,target)
-	lol[0],lol[1] = crossOver(lol[0],lol[1])
+
+	
+	//lol[0],lol[1] = crossOver(lol[0],lol[1])
 	for i:=0;i<POPULATION;i++{
 		curr = evalExpression(lol[i])
 		currFit,goalReached = calcFitness(curr,target)
