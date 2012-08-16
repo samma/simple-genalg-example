@@ -10,7 +10,7 @@ import "sort"
 
 const CROSSOVERRATE = 0.7
 const MUTATIONRATE = 0.001
-const POPULATION = 15
+const POPULATION = 200
 const MAXGENERATIONS = 10
 const NUMOPERATORS = 3
 const NUMBITS = 4*(NUMOPERATORS*2+1) //28 in the case of 3 operators
@@ -181,6 +181,7 @@ func calcFitness(inputVal, goal float64)(fitness float64,correct bool){
 	correct = false
 	if inputVal == goal{
 		correct = true
+		return 
 	}
 	fitness = 1/abs((goal-inputVal))
 	return
@@ -195,11 +196,14 @@ func abs(in float64)(ret float64){
 
 
 //TODO finalize
-func mateOneGeneration(popIn []string,goal float64)(popOut []string){
+func mateOneGeneration(popIn []string,goal float64)(popOut []string,done bool){
 	popOut = make([]string,len(popIn))
 	fitness := make([]float64,len(popIn))
 	for i,chromIn := range popIn{
-		fitness[i],_ = calcFitness(evalExpression(chromIn),goal)
+		fitness[i],done = calcFitness(evalExpression(chromIn),goal)
+		if done{
+			return
+		}
 	}
 //	Log(prepareRoulette(fitness))	
 	
@@ -282,10 +286,7 @@ func main(){
 	currFit := float64(0.0)
 	goalReached := false
 
-	//Log(mutateString(lol[0]))
-	mateOneGeneration(lol,target)
-
-	
+	//Log(mutateString(lol[0]))	
 	//lol[0],lol[1] = crossOver(lol[0],lol[1])
 	for i:=0;i<POPULATION;i++{
 		curr = evalExpression(lol[i])
@@ -304,6 +305,47 @@ func main(){
 		}
 
 	}
+
+	
+	if !goalReached{
+		Log("Population failed")
+		Log("Best loser is:")
+		Log(best)
+		Log(bestFit)
+	}
+	lol,goalReached = mateOneGeneration(lol,target)	
+
+	if goalReached{
+		Log("evolution perfected!")
+		return
+	}
+
+	best = float64(0.0)
+	bestFit = float64(0.0)
+	curr = float64(0.0)
+	currFit = float64(0.0)
+
+	
+	//Log(mutateString(lol[0]))	
+	//lol[0],lol[1] = crossOver(lol[0],lol[1])
+	for i:=0;i<POPULATION;i++{
+		curr = evalExpression(lol[i])
+		currFit,goalReached = calcFitness(curr,target)
+		if !goalReached {
+			if currFit > bestFit{
+				best = curr
+				bestFit = currFit
+			}
+		}else{
+			bestFit = currFit
+			best = curr
+			Log("Evolution perfected!",target)
+			
+			break;
+		}
+
+	}
+
 
 	if !goalReached{
 		Log("Population failed")
