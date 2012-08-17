@@ -10,11 +10,14 @@ import "sort"
 
 const CROSSOVERRATE = 0.7
 const MUTATIONRATE = 0.001
-const POPULATION = 200
-const MAXGENERATIONS = 10
+const POPULATION_SIZE = 100
+const MAXGENERATIONS = 400
+const CHROM_LENGTH = 300
 const NUMOPERATORS = 3
-const NUMBITS = 4*(NUMOPERATORS*2+1) //28 in the case of 3 operators
-const SYMBOLLENGTH = 4 //in bits
+//const NUMBITS = 4*(NUMOPERATORS*2+1) //28 in the case of 3 operators
+const GENE_LENGTH = 4
+const RETURNONDIVZERO = 10000 //TODO find some better solution
+
 
 func Deb(v ...interface{}){
 	enableDebug := false
@@ -67,7 +70,11 @@ func doMath(operator int, tempinput int, storage float64)(res float64){
 	case add:return storage+input
 	case sub:return storage-input
 	case mult:return storage*input
-	case div:return storage/input
+	case div:
+		if input == 0{
+			return RETURNONDIVZERO 
+		}
+		return storage/input
 	default: return 99999.9 //Break
 	}
 	return 0.1 //TODO handle error????
@@ -114,7 +121,7 @@ func humanReadOperator(arg int)(ret string){
 
 func generateOneChrom()(string){
 	var temp string
-	for i:=0;i<NUMBITS;i++{
+	for i:=0;i<CHROM_LENGTH;i++{
 		tilf := rand.Float64()
 		if tilf < 0.5{
 			temp+="0"
@@ -144,17 +151,17 @@ func evalExpression(chromStr string)(ret float64){
 	tempNumeric := 0
 	
 	for (len(chromStr) > 0) {
-		thisString := chromStr[0:SYMBOLLENGTH]
+		thisString := chromStr[0:GENE_LENGTH]
 		if next == number{
 			if argumentType(thisString) == number{
 				//calculate new currentval based on  "prev operatoe" and "currentval
 				tempNumeric = parseNumeric(thisString) 
 				//handle divide by zero
-				if tempNumeric == 0 && currentOperator == div{
-					Log("div by zero")
-					return -1 
-					
-				}
+				//if tempNumeric == 0 && currentOperator == div{
+				//	Log("div by zero")
+				//	return -1 
+				//	
+				//}
 				currentval = doMath(currentOperator,tempNumeric,currentval)
 				Deb(tempNumeric)
 				next = operator
@@ -170,7 +177,7 @@ func evalExpression(chromStr string)(ret float64){
 			}
 
 		}
-		chromStr = chromStr[4:]
+		chromStr = chromStr[GENE_LENGTH:] // 4 ??
 	}
 	Deb("=")
 	return currentval
@@ -207,7 +214,7 @@ func mateOneGeneration(popIn []string,goal float64)(popOut []string,done bool){
 	}
 //	Log(prepareRoulette(fitness))	
 	
-	for i:=0;i<len(popIn)/2;i++{
+	for i:=0;i<len(popIn);i+=2{
 		firstMateIndex := pickWinner(prepareRoulette(fitness))
 		secondMateIndex := pickWinner(prepareRoulette(fitness))
 		for secondMateIndex == firstMateIndex{
@@ -246,7 +253,7 @@ func mutateString(chrom string)(ret string){
 				ret = ret[0:i] + "1" + ret[i+1:]
 			}else{
 				ret = ret[0:i] + "0" + ret[i+1:]
-			}
+			}	
 		}
 	}
 	return ret
@@ -279,26 +286,32 @@ func pickWinner(rouletteWheel []float64)(ret int){
 func main(){
 	var target float64 = 42
 	fmt.Println("Hello genetic algorithms!")
-	lol := generateNChroms(POPULATION)
-	best := float64(0.0)
-	bestFit := float64(0.0)
-	curr := float64(0.0)
-	currFit := float64(0.0)
+	population := generateNChroms(POPULATION_SIZE)
 	goalReached := false
 
+	for i:=0;i<MAXGENERATIONS;i++{
+		population,goalReached = mateOneGeneration(population,target)
+		if goalReached{
+			Log("Evolution perfected after ",i," generations")
+			break
+		}
+	}
+	if !goalReached
+
+	
 	//Log(mutateString(lol[0]))	
 	//lol[0],lol[1] = crossOver(lol[0],lol[1])
-	for i:=0;i<POPULATION;i++{
+
+	/*
+	for i:=0;i<POPULATION_SIZE;i++{
 		curr = evalExpression(lol[i])
 		currFit,goalReached = calcFitness(curr,target)
 		if !goalReached {
 			if currFit > bestFit{
-				best = curr
 				bestFit = currFit
 			}
 		}else{
 			bestFit = currFit
-			best = curr
 			Log("Evolution perfected!",target)
 			
 			break;
@@ -310,49 +323,14 @@ func main(){
 	if !goalReached{
 		Log("Population failed")
 		Log("Best loser is:")
-		Log(best)
 		Log(bestFit)
 	}
-	lol,goalReached = mateOneGeneration(lol,target)	
 
-	if goalReached{
-		Log("evolution perfected!")
-		return
-	}
-
-	best = float64(0.0)
-	bestFit = float64(0.0)
-	curr = float64(0.0)
-	currFit = float64(0.0)
-
-	
-	//Log(mutateString(lol[0]))	
-	//lol[0],lol[1] = crossOver(lol[0],lol[1])
-	for i:=0;i<POPULATION;i++{
-		curr = evalExpression(lol[i])
-		currFit,goalReached = calcFitness(curr,target)
-		if !goalReached {
-			if currFit > bestFit{
-				best = curr
-				bestFit = currFit
-			}
-		}else{
-			bestFit = currFit
-			best = curr
-			Log("Evolution perfected!",target)
-			
-			break;
-		}
-
-	}
+	*/
 
 
-	if !goalReached{
-		Log("Population failed")
-		Log("Best loser is:")
-		Log(best)
-		Log(bestFit)
-	}
+	//lol,goalReached = mateOneGeneration(lol,target)	
+
 	//population := generateNChroms(POPULATION)
 	//fmt.Print(population)
 
