@@ -9,14 +9,14 @@ import "sort"
 
 
 const CROSSOVERRATE = 0.7
-const MUTATIONRATE = 0.001
-const POPULATION_SIZE = 100
-const MAXGENERATIONS = 400
+const MUTATIONRATE = 0.005
+const POPULATION_SIZE = 200
+const MAXGENERATIONS = 1000
 const CHROM_LENGTH = 300
 const NUMOPERATORS = 3
 //const NUMBITS = 4*(NUMOPERATORS*2+1) //28 in the case of 3 operators
 const GENE_LENGTH = 4
-const RETURNONDIVZERO = 10000 //TODO find some better solution
+const RETURNONDIVZERO = 1000000 //TODO find some better solution
 
 
 func Deb(v ...interface{}){
@@ -35,6 +35,17 @@ func Log(v ...interface{}){
 }
 
 
+func logBestFitness(input chan float64 ){
+	var best float64
+	var temp float64
+	for{
+		temp = <-input
+		if temp > best{
+			best =  temp
+			Log("best fitness so far is: ",best)
+		}
+	}
+}
 const (
 	broken = iota
 	number
@@ -134,6 +145,7 @@ func generateOneChrom()(string){
 
 func generateNChroms(n int)([]string){
 	ret := make([]string,n)
+	//time.Now().Unix() //for new seed every program
 	rand.Seed(time.Now().Unix())
 	for i:=0;i<n;i++{
 		ret[i] = generateOneChrom()
@@ -197,7 +209,7 @@ func abs(in float64)(ret float64){
 
 
 //TODO finalize
-func mateOneGeneration(popIn []string,goal float64)(popOut []string,done bool){
+func mateOneGeneration(popIn []string,goal float64, logBestFitness chan float64)(popOut []string,done bool){
 	popOut = make([]string,len(popIn))
 	fitness := make([]float64,len(popIn))
 	var best float64
@@ -210,7 +222,8 @@ func mateOneGeneration(popIn []string,goal float64)(popOut []string,done bool){
 			return
 		}
 	}
-	Log("best fitness is ",best)
+	logBestFitness<-best
+	//Log("best fitness is ",best)
 //	Log(prepareRoulette(fitness))	
 	
 	for i:=0;i<len(popIn);i+=2{
@@ -283,13 +296,16 @@ func pickWinner(rouletteWheel []float64)(ret int){
 
 //An attempt to run a genetic algorithm...
 func main(){
-	var target float64 = 42
+	chanLogger := make(chan float64)
+	go logBestFitness(chanLogger)
+
+	var target float64 = 1000
 	fmt.Println("Hello genetic algorithms!")
 	population := generateNChroms(POPULATION_SIZE)
 	goalReached := false
 
 	for i:=0;i<MAXGENERATIONS;i++{
-		population,goalReached = mateOneGeneration(population,target)
+		population,goalReached = mateOneGeneration(population,target,chanLogger)
 		if goalReached{
 			Log("Evolution perfected after ",i," generations")
 			break
