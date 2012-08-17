@@ -156,19 +156,13 @@ func evalExpression(chromStr string)(ret float64){
 			if argumentType(thisString) == number{
 				//calculate new currentval based on  "prev operatoe" and "currentval
 				tempNumeric = parseNumeric(thisString) 
-				//handle divide by zero
-				//if tempNumeric == 0 && currentOperator == div{
-				//	Log("div by zero")
-				//	return -1 
-				//	
-				//}
 				currentval = doMath(currentOperator,tempNumeric,currentval)
 				Deb(tempNumeric)
 				next = operator
 			}
 			
 		}else if next == operator{
-			//if arg type is operaotr, store it for use in possibly next numerical
+			        //if arg type is operaotr, store it for use in possibly next numerical
 			if argumentType(thisString) == operator{
 				tempOperator = parseOperator(thisString)
 				currentOperator = tempOperator
@@ -206,12 +200,17 @@ func abs(in float64)(ret float64){
 func mateOneGeneration(popIn []string,goal float64)(popOut []string,done bool){
 	popOut = make([]string,len(popIn))
 	fitness := make([]float64,len(popIn))
+	var best float64
 	for i,chromIn := range popIn{
 		fitness[i],done = calcFitness(evalExpression(chromIn),goal)
+		if fitness[i] > best{
+			best = fitness[i]
+		}
 		if done{
 			return
 		}
 	}
+	Log("best fitness is ",best)
 //	Log(prepareRoulette(fitness))	
 	
 	for i:=0;i<len(popIn);i+=2{
@@ -296,7 +295,9 @@ func main(){
 			break
 		}
 	}
-	if !goalReached
+	if !goalReached{
+		Log("The species stopped evolving after ",MAXGENERATIONS)
+	}
 
 	
 	//Log(mutateString(lol[0]))	
