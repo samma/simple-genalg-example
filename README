@@ -1,5 +1,7 @@
 An attempt to implement the genetic algorithm example from http://www.ai-junkie.com/ga/intro/gat1.html (by ai-junkie) and write it in a new language, Go. 
 
+The implemented algorithm tries to create a long expression consisting of [0,9] and +-*/ (like 9*8+3/2-4 etc..) which should evaluate to some given number. Cost function: 1/abs(target-goal). Right now it calculates a 300 symbol long expression succesfully.
+
 Coded just for fun,
 by Torgeir Lien
 
